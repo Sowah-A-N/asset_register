@@ -1,0 +1,25 @@
+# Dependencies
+vendor/
+
+# Environment / secrets  (never commit real credentials)
+.env
+*.env
+
+# Database dumps — contain schema, data, and credential hints
+*.sql
+
+# Archives and generated report output files (not the PHP source in reports/ dirs)
+*.zip
+*.tar.gz
+reports.zip
+
+# Uploaded files
+uploads/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
