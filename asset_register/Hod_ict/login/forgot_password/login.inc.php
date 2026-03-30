@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . "/../../../security.php";
+secure_session_start();
 include "datacon.php";
 
 if (isset($_POST['login']))

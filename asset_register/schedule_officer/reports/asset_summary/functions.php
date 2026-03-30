@@ -17,6 +17,7 @@ function dd($data)
 
 
 function assetClassSummary($year){
+    $year = (int)$year;
 
     global $conn;
     
@@ -40,7 +41,7 @@ function assetClassSummary($year){
                         JOIN asset_additions_year b 
                             ON a.asset_class COLLATE utf8mb4_general_ci = b.asset_class COLLATE utf8mb4_general_ci
                             AND a.year = b.year
-                        WHERE a.year = '{$year}'
+                        WHERE a.year = {$year}
                         ORDER BY a.asset_class, a.year;";
                         
 
@@ -453,7 +454,7 @@ function calculationsByClass($assetClass, $yearOfReport)
     $resultAssets = mysqli_query($conn, $sqlAssets);
 
     if (!$resultAssets) {
-        die("Error in SQL query (Assets): " . mysqli_error($conn));
+        error_log(mysqli_error($conn)); die('A database error occurred.');
     }
 
     // Fetch asset class details
@@ -461,7 +462,7 @@ function calculationsByClass($assetClass, $yearOfReport)
     $resultAssetClasses = mysqli_query($conn, $sqlAssetClasses);
 
     if (!$resultAssetClasses) {
-        die("Error in SQL query (Asset Classes): " . mysqli_error($conn));
+        error_log(mysqli_error($conn)); die('A database error occurred.');
     }
 
     $rowAssetClasses = mysqli_fetch_assoc($resultAssetClasses);

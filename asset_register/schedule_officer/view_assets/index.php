@@ -1,23 +1,13 @@
 <?php
 
 
-session_start();
-if (!isset($_SESSION['username'])) {
-    header("Location:../login/");
-    exit;
-}
-$username = $_SESSION['username'];
-require_once __DIR__ . "/../datacon.php"; // expects $conn from this file
-if (!isset($conn)) die("DB connection missing");
+require_once '../init.php';
 
 // config
 $limit = 50;
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $offset = ($page - 1) * $limit;
 $assetClassFilter = isset($_GET['asset_class_filter']) && $_GET['asset_class_filter'] !== '' ? trim($_GET['asset_class_filter']) : null;
-
-// helper
-function esc($s) { return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8'); }
 
 // prefetch lists once
 $locations = []; $users = []; $types = []; $assetClasses = [];
@@ -148,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         echo "<script>alert('Asset updated'); window.location='index.php';</script>";
         exit;
     } else {
-        echo "<script>alert('Update failed: " . esc(mysqli_error($conn)) . "'); window.location='index.php';</script>";
+        error_log(mysqli_error($conn)); echo "<script>alert('Update failed. Please try again.'); window.location='index.php';</script>";
         exit;
     }
 }

@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . "/../../security.php";
+secure_session_start();
 if (!isset($_SESSION['username']))
 {
     header("Location:../login/");
@@ -44,7 +45,7 @@ if(isset($_POST['submit']))
           if(!$result)
           {
               echo "Not Inserted";
-              echo "Errormessage:".mysqli_error($conn);
+              error_log(mysqli_error($conn));
               exit();
           }
 

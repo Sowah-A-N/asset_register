@@ -1,13 +1,5 @@
 <?php
-session_start();
-if (!isset($_SESSION['username'])) {
-  header("Location:../login/");
-  die();
-}
-$username = $_SESSION['username'];
-include "../datacon.php";
-
-
+require_once '../../init.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -76,8 +68,7 @@ include "../datacon.php";
                          echo "<option value=\"\">No classes available</option>";
                      }
          
-                     $selectedAssetClass = isset($_POST['asset_class_select']) ? $_POST['asset_class_select'] : "";
-                     echo $selectedAssetClass;
+                     $selectedAssetClass = trim($_POST['asset_class_select'] ?? '');
                      echo "</select>";
                      echo "<button type='submit' class='m-5 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700'>" . "Filter" . "</button>";
                      echo "<button type='button' class='m-12 border-2 border-blue-600 rounded-lg px-3 py-2 text-blue-600 cursor-pointer hover:bg-blue-600 hover:text-white' onclick='returnToDashboard()'>Return to Dashboard</button>";
@@ -98,7 +89,7 @@ include "../datacon.php";
                       $sqlClassQuery = "SELECT assets.*, asset_classes.dep_rate, asset_classes.account_depr_open_bal, asset_classes.estimated_life, asset_classes.opening_bal 
                                         FROM assets JOIN asset_classes 
                                         ON assets.asset_class = asset_classes.asset_class 
-                                        WHERE assets.asset_class = '$selectedAssetClass'
+                                        WHERE assets.asset_class = '" . mysqli_real_escape_string($conn, $selectedAssetClass) . "'
                                         AND assets.disposals > 0;";
                       //echo "<script>alert($selectedAssetClass)</script>";
                     } else {
@@ -173,7 +164,7 @@ include "../datacon.php";
                                             $resultAsset = mysqli_query($conn, $sqlAsset);
                                         
                                             if (!$resultAsset) {
-                                                die("Error in SQL query (Asset): " . mysqli_error($conn));
+                                                error_log(mysqli_error($conn)); die('A database error occurred.');
                                             }
                                         
                                             $rowAsset = mysqli_fetch_assoc($resultAsset);
@@ -185,7 +176,7 @@ include "../datacon.php";
                                             $resultAssetClasses = mysqli_query($conn, $sqlAssetClasses);
                                         
                                             if (!$resultAssetClasses) {
-                                                die("Error in SQL query (Asset Classes): " . mysqli_error($conn));
+                                                error_log(mysqli_error($conn)); die('A database error occurred.');
                                             }
                                         
                                             $rowAssetClasses = mysqli_fetch_assoc($resultAssetClasses);
@@ -210,7 +201,7 @@ include "../datacon.php";
                                             $resultDepRate = mysqli_query($conn, $sqlDepRate);
                                         
                                             if (!$resultDepRate) {
-                                                die("Error in SQL query (Depreciation Rate): " . mysqli_error($conn));
+                                                error_log(mysqli_error($conn)); die('A database error occurred.');
                                             }
                                         
                                             $rowDepRate = mysqli_fetch_assoc($resultDepRate);
@@ -224,7 +215,7 @@ include "../datacon.php";
                                             $resultAccDeprOpeningBal = mysqli_query($conn, $sqlAccDeprOpeningBal);
                                         
                                             if (!$resultAccDeprOpeningBal) {
-                                                die("Error in SQL query (Accumulated Depreciation Opening Balance): " . mysqli_error($conn));
+                                                error_log(mysqli_error($conn)); die('A database error occurred.');
                                             }
                                         
                                             $rowAccDeprOpeningBal = mysqli_fetch_assoc($resultAccDeprOpeningBal);

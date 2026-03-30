@@ -5,7 +5,7 @@ $sqlAssets = "SELECT * FROM assets";
 $resultAssets = mysqli_query($conn, $sqlAssets);
 
 if (!$resultAssets) {
-    die("Error in SQL query (Assets): " . mysqli_error($conn));
+    error_log(mysqli_error($conn)); die('A database error occurred.');
 }
 
 echo "<h2>All Assets</h2>";

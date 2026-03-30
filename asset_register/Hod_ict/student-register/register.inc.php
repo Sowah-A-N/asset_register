@@ -1,9 +1,7 @@
 <?php
 
- session_start();
-
- include "datacon.php";
- if(mysqli_connect_errno())
+ require_once '../init.php';
+if(mysqli_connect_errno())
  {
      echo "Failed to connect to MYSQli:".mysqli_connect_error();
  }
@@ -111,7 +109,7 @@
                                 if(!$result)
                                 {
                                     echo "Not Inserted";
-                                    echo "Errormessage:".mysqli_error($conn);
+                                    error_log(mysqli_error($conn));
                                     exit();
                                 }
         

@@ -1,12 +1,5 @@
 <?php
-session_start();
-if (!isset($_SESSION['username'])) {
-  header("Location:../login/");
-  die();
-}
-$username = $_SESSION['username'];
-include "../datacon.php";
-
+require_once '../init.php';
 if(isset($_POST['add']))
 {
 
@@ -48,7 +41,7 @@ if(isset($_POST['add']))
           echo '<script type="text/javascript">alert("Asset Class added Successfully.");window.location=\'index.php\';</script>';
 
         } else {
-            echo "Error adding Supplier: " . $conn->error;
+            error_log($conn->error); echo '<script>alert("A database error occurred."); window.location=\'index.php\';</script>';
         }
     }
 
@@ -153,7 +146,7 @@ if(isset($_POST['add']))
                         $sql="SELECT * FROM asset_classes ORDER BY ast_ID DESC LIMIT 50";
                         $result=mysqli_query($conn, $sql);
                         if (!$result) {
-                            printf("Error: %s\n", mysqli_error($conn));
+                            error_log(mysqli_error($conn));
                             exit();
                         } ?>
                         <br />

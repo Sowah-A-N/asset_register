@@ -145,7 +145,7 @@ function getAssetsPerClass($assetClass){
 
     $stmt = mysqli_prepare($conn, $assetsPerClassQuery);
     if (!$stmt) {
-        die("Error in SQL Query preparation for getting assets in class: " . mysqli_error($conn));
+        error_log(mysqli_error($conn)); die('A database error occurred.');
     }
 
     mysqli_stmt_bind_param($stmt, "s", $assetClass);
@@ -153,7 +153,7 @@ function getAssetsPerClass($assetClass){
     $result = mysqli_stmt_get_result($stmt);
 
     if (!$result) {
-        die("Error in SQL Query execution for getting assets in class: " . mysqli_error($conn));
+        error_log(mysqli_error($conn)); die('A database error occurred.');
     }
 
     $usefulLife = getAssetClassInitialData($assetClass)['estimated_life'];
@@ -210,7 +210,7 @@ function getAssetInfo($assetId, $year = null){
 
     $stmt = mysqli_prepare($conn, $assetInfoQuery);
     if (!$stmt) {
-        die("Error in SQL Query preparation for getting asset info: " . mysqli_error($conn));
+        error_log(mysqli_error($conn)); die('A database error occurred.');
     }
 
     mysqli_stmt_bind_param($stmt, "i", $assetId);
@@ -218,7 +218,7 @@ function getAssetInfo($assetId, $year = null){
     $result = mysqli_stmt_get_result($stmt);
 
     if (!$result) {
-        die("Error in SQL Query execution for getting asset info: " . mysqli_error($conn));
+        error_log(mysqli_error($conn)); die('A database error occurred.');
     }
 
     if ($row = mysqli_fetch_array($result)) {

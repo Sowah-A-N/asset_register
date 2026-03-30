@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
         if ($conn->query($insert_query) === TRUE) {
             echo '<script type="text/javascript">alert("Asset Class Added Successfully");window.location="../dashboard/";</script>';
         } else {
-            echo "Error adding Asset Class: " . $conn->error;
+            error_log($conn->error); echo '<script>alert("A database error occurred."); window.location=\'index.php\';</script>';
         }
     }
 }

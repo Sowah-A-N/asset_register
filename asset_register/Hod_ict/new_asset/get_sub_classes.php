@@ -1,24 +1,24 @@
 <?php
-include "../datacon.php";
+require_once '../init.php';
 
-// Include your database connection file here
+$assetClassId = trim($_GET['asset_class_id'] ?? '');
 
-$assetClassId = $_GET['asset_class_id'];
-
-$sql = "SELECT * FROM asset_class_sub_classes WHERE asset_class = '$assetClassId'";
-$result = mysqli_query($conn, $sql);
-
-if ($result) {
-    if (mysqli_num_rows($result) > 0) {
-        while ($row = mysqli_fetch_assoc($result)) {
-            echo "<option value='" . $row['T_id'] . "'>" . $row['sub_class'] . "</option>";
-        }
-    } else {
-        echo "<option value=''>No sub-classes available for asset class ID: $assetClassId</option>";
-    }
-} else {
-    echo "<option value=''>Error executing query: " . mysqli_error($conn) . "</option>";
+if ($assetClassId === '') {
+    echo "<option value=''>Select a sub-class</option>";
+    exit;
 }
 
-mysqli_close($conn);
-?>
+$stmt = mysqli_prepare($conn, "SELECT T_id, sub_class FROM asset_class_sub_classes WHERE asset_class = ?");
+mysqli_stmt_bind_param($stmt, 's', $assetClassId);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+
+if ($result && mysqli_num_rows($result) > 0) {
+    while ($row = mysqli_fetch_assoc($result)) {
+        echo "<option value='" . esc($row['T_id']) . "'>" . esc($row['sub_class']) . "</option>";
+    }
+} else {
+    echo "<option value=''>No sub-classes available</option>";
+}
+
+mysqli_stmt_close($stmt);

@@ -1,49 +1,45 @@
 <?php
-// Start or resume a session
-session_start();
+require_once __DIR__ . '/../../security.php';
+secure_session_start();
 
-// Check if the page is being reloaded
-if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-    // Unset the session variable containing the asset ID array
-    unset($_SESSION['assetIdArray']);
+// Auth guard — this AJAX endpoint must require a valid session
+if (!isset($_SESSION['username'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthenticated']);
+    exit();
 }
 
-// Fetch the selected value and select name from the AJAX request
-$selectedValue = isset($_POST['selected_value']) ? $_POST['selected_value'] : '';
-$selectName = isset($_POST['select_name']) ? $_POST['select_name'] : '';
+header('Content-Type: application/json');
 
-// Initialize the assetIdArray if not already initialized
+// On GET (page reload), clear the stored asset ID components
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    unset($_SESSION['assetIdArray']);
+    echo json_encode([]);
+    exit();
+}
+
+$selectedValue = $_POST['selected_value'] ?? '';
+$selectName    = $_POST['select_name'] ?? '';
+
+// Initialise the array if not already present
 if (!isset($_SESSION['assetIdArray'])) {
     $_SESSION['assetIdArray'] = [
-        'RMU_constant' => 'RMU',
-        'name_of_department' => '',
-        'item_specific_code' => '',
+        'RMU_constant'          => 'RMU',
+        'name_of_department'    => '',
+        'item_specific_code'    => '',
         'dept_subclass_counter' => '0',
-        'year' => substr(date('Y'), -2)
+        'year'                  => substr(date('Y'), -2),
     ];
 }
 
-// Append the previously set values to the current assetIdArray
 $assetIdArray = $_SESSION['assetIdArray'];
 
-// Update the assetIdArray based on the select name and selected value
-switch ($selectName) {
-    case 'name_of_department':
-        $assetIdArray['name_of_department'] = $selectedValue;
-        break;
-    case 'item_specific_code':
-        $assetIdArray['item_specific_code'] = $selectedValue;
-        break;
-    case '':
-        $assetIdArray[''] = $selectedValue;
-        break;
-    // Add more cases as needed for other select elements
+// Only allow known keys to be updated (whitelist)
+$allowed = ['name_of_department', 'item_specific_code'];
+if (in_array($selectName, $allowed, true)) {
+    $assetIdArray[$selectName] = $selectedValue;
 }
 
-// Encode the updated array as JSON and send it back as the response
-echo json_encode($assetIdArray);
-
-// Update the session with the modified assetIdArray
 $_SESSION['assetIdArray'] = $assetIdArray;
 
-
+echo json_encode($assetIdArray);

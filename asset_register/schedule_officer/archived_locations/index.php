@@ -1,12 +1,5 @@
 <?php
-session_start();
-if (!isset($_SESSION['username'])) {
-  header("Location:../login/");
-  die();
-}
-$username = $_SESSION['username'];
-include "../datacon.php";
-
+require_once '../init.php';
 if (isset($_POST['add'])) {
 
   $location_name = mysqli_real_escape_string($conn, $_POST['name']);
@@ -34,7 +27,7 @@ if (isset($_POST['add'])) {
         echo '<script type="text/javascript">alert("Asset location successfully added.");window.location=\'index.php\';</script>';
       } else {
         echo '<script type="text/javascript">alert("Error adding asset location.");window.location=\'index.php\';</script>';
-        $conn->error;
+        error_log($conn->error);
       }
     }
   }
@@ -136,7 +129,7 @@ if (isset($_POST['add'])) {
                         $sql="SELECT * FROM asset_location_archive ORDER BY loc_ID DESC LIMIT 50";
                         $result=mysqli_query($conn, $sql);
                         if (!$result) {
-                            printf("Error: %s\n", mysqli_error($conn));
+                            error_log(mysqli_error($conn));
                             exit();
                         } ?>
                         <br />

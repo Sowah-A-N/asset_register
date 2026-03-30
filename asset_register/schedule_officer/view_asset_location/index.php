@@ -1,48 +1,38 @@
 <?php
-session_start();
-if (!isset($_SESSION['username'])) {
-  header("Location:../login/");
-  die();
-}
-$username = $_SESSION['username'];
-include "../datacon.php";
-
+require_once '../init.php';
 if (isset($_POST['add'])) {
 
 
 
 
 
-  $location=mysqli_real_escape_string($conn, $_POST['location']);
- 
+  $location = trim($_POST['location'] ?? '');
 
   if (empty($location))
   {
-      echo "<script> alert('Check Details'); window.location='index.php' </script> ";  
+      echo "<script> alert('Check Details'); window.location='index.php' </script> ";
       exit();
   }
   else
   {
-    // SQL query to check if the supplier already exists
-    $check_query = "SELECT COUNT(*) as count FROM asset_location WHERE location = '$location'";
-    $result = $conn->query($check_query);
+    $chk = mysqli_prepare($conn, "SELECT COUNT(*) as cnt FROM asset_location WHERE location = ?");
+    mysqli_stmt_bind_param($chk, 's', $location);
+    mysqli_stmt_execute($chk);
+    $chkRes = mysqli_stmt_get_result($chk);
+    $chkRow = mysqli_fetch_assoc($chkRes);
+    mysqli_stmt_close($chk);
 
-    // Fetch the result row
-    $row = $result->fetch_assoc();
-
-    if (isset($row['count']) && $row['count'] > 0) {
-        // Supplier already exists, display an error message
+    if ($chkRow['cnt'] > 0) {
         echo '<script type="text/javascript">alert("Location already exists.");window.location=\'index.php\';</script>';
     } else {
-        // Supplier does not exist, proceed with insertion
-        $insert_query = "INSERT INTO asset_location (location) 
-                        VALUES ('$location')";
-
-        if ($conn->query($insert_query) === TRUE) {
-            echo "<script>alert(' Location Added Successfully'); </script>";
+        $ins = mysqli_prepare($conn, "INSERT INTO asset_location (location) VALUES (?)");
+        mysqli_stmt_bind_param($ins, 's', $location);
+        if (mysqli_stmt_execute($ins)) {
+            echo "<script>alert('Location Added Successfully'); </script>";
         } else {
-            echo "Error adding Supplier: " . $conn->error;
+            error_log(mysqli_error($conn)); echo '<script>alert("A database error occurred."); window.location=\'index.php\';</script>';
         }
+        mysqli_stmt_close($ins);
     }
 
   }
@@ -149,7 +139,7 @@ if (isset($_POST['add'])) {
                     $sql = "SELECT * FROM asset_location";
                     $result = mysqli_query($conn, $sql);
                     if (!$result) {
-                      printf("Error: %s\n", mysqli_error($conn));
+                      error_log(mysqli_error($conn));
                       exit();
                     } ?>
                     <br />
@@ -198,7 +188,7 @@ if (isset($_POST['archive_location'])) {
     if (!$moveToArchiveResult) {
         // Rollback the transaction on failure
         mysqli_rollback($conn);
-        echo '<script>alert("Error archiving Location: ' . mysqli_error($conn) . '"); window.location.href = "index.php";</script>';
+        error_log(mysqli_error($conn)); echo '<script>alert("A database error occurred."); window.location.href = "index.php";</script>';
         exit();
     }
 
@@ -207,7 +197,7 @@ if (isset($_POST['archive_location'])) {
     if (!$deleteFromLocationResult) {
         // Rollback the transaction on failure
         mysqli_rollback($conn);
-        echo '<script>alert("Error deleting from asset_location table: ' . mysqli_error($conn) . '"); window.location.href = "index.php";</script>';
+        error_log(mysqli_error($conn)); echo '<script>alert("A database error occurred."); window.location.href = "index.php";</script>';
         exit();
     }
 

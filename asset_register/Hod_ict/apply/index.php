@@ -1,15 +1,5 @@
 <?php
-session_start();
-if (!isset($_SESSION['username']))
-{
-    header("Location:../login/");
-    die();
-}
-$username=$_SESSION['username'];
-include "datacon.php";
-
-
-
+require_once '../init.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">

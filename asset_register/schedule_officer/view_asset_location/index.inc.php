@@ -1,6 +1,7 @@
 <?php
 
-session_start();
+require_once __DIR__ . "/../../security.php";
+secure_session_start();
 if (!isset($_SESSION['user_name']))
 {
     header("Location:/staff_allowance/login/");
@@ -173,7 +174,7 @@ include "../datacon.php";
                                 if(!$result)
                                 {
                                         echo "Not Selected";
-                                        echo "Errormessage:".mysqli_error($conn);
+                                        error_log(mysqli_error($conn));
                                         exit();
                                         
                                 }
