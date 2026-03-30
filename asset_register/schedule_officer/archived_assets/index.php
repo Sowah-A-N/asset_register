@@ -1,13 +1,6 @@
 <?php
 
-session_start();
-if (!isset($_SESSION['username'])) {
-  header("Location:../login/");
-  die();
-}
-$username = $_SESSION['username'];
-include "../datacon.php";
-
+require_once '../init.php';
 if (!$conn) {
   die("Connection failed: " . mysqli_connect_error());
 }
@@ -23,7 +16,7 @@ if (isset($_POST['archive'])) {
   $resultFetchAsset = mysqli_query($conn, $sqlFetchAsset);
 
   if (!$resultFetchAsset) {
-      die("Error in SQL query (Fetch Asset): " . mysqli_error($conn));
+      error_log(mysqli_error($conn)); die('A database error occurred.');
   }
 
   if (mysqli_num_rows($resultFetchAsset) > 0) {
@@ -37,7 +30,7 @@ if (isset($_POST['archive'])) {
       
 
       if (!$resultArchive) {
-          die("Error in SQL query (Archive): " . mysqli_error($conn));
+          error_log(mysqli_error($conn)); die('A database error occurred.');
       }
 
       // Delete the record from the assets table
@@ -46,7 +39,7 @@ if (isset($_POST['archive'])) {
       
 
       if (!$resultDeleteAsset) {
-          die("Error in SQL query (Delete Asset): " . mysqli_error($conn));
+          error_log(mysqli_error($conn)); die('A database error occurred.');
       }
   }
 }
@@ -155,7 +148,7 @@ $resultAssetClasses = mysqli_query($conn, $sqlAssetClasses);
 
 // Check if the query was successful
 if (!$resultAssetClasses) {
-    die("Error in SQL query (Asset Classes): " . mysqli_error($conn));
+    error_log(mysqli_error($conn)); die('A database error occurred.');
 }
 
 // Check if there are any asset classes
@@ -181,7 +174,7 @@ if (mysqli_num_rows($resultAssetClasses) > 0) {
           $result = mysqli_query($conn, $sql);
 
           if (!$result) {
-              printf("Error: %s\n", mysqli_error($conn));
+              error_log(mysqli_error($conn));
               exit();
           }
       } else {
@@ -190,7 +183,7 @@ if (mysqli_num_rows($resultAssetClasses) > 0) {
           $result = mysqli_query($conn, $sql);
 
           if (!$result) {
-              printf("Error: %s\n", mysqli_error($conn));
+              error_log(mysqli_error($conn));
               exit();
           }
       }
@@ -200,7 +193,7 @@ if (mysqli_num_rows($resultAssetClasses) > 0) {
       $result = mysqli_query($conn, $sql);
 
       if (!$result) {
-          printf("Error: %s\n", mysqli_error($conn));
+          error_log(mysqli_error($conn));
           exit();
       }
   }
@@ -344,7 +337,7 @@ if (isset($_POST['submit_disposal'])) {
       echo '<script>window.location.href = "index.php";</script>';
       exit();
   } else {
-      printf("Error updating record: %s\n", mysqli_error($conn));
+      error_log(mysqli_error($conn));
       exit();
   }
 }

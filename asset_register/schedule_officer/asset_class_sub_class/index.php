@@ -1,12 +1,5 @@
 <?php
-session_start();
-if (!isset($_SESSION['username'])) {
-  header("Location:../login/");
-  die();
-}
-$username = $_SESSION['username'];
-include "../datacon.php";
-
+require_once '../init.php';
 if(isset($_POST['add']))
 {
 
@@ -173,7 +166,7 @@ $asset_name=$row["asset_class"];
             $sqlAssetClasses = "SELECT * FROM asset_classes";
             $resultAssetClasses = mysqli_query($conn, $sqlAssetClasses);
             if (!$resultAssetClasses) {
-                die("Error in SQL query (Asset Classes): " . mysqli_error($conn));
+                error_log(mysqli_error($conn)); die('A database error occurred.');
             }
             while ($rowAssets = mysqli_fetch_assoc($resultAssetClasses)) {
                 $assetClass = $rowAssets['asset_class'];
@@ -202,7 +195,7 @@ if(isset($_POST['filter'])) {
     $result = mysqli_query($conn, $sql);
 
     if (!$result) {
-        printf("Error: %s\n", mysqli_error($conn));
+        error_log(mysqli_error($conn));
         exit();
     }
 } else {
@@ -211,7 +204,7 @@ if(isset($_POST['filter'])) {
     $result = mysqli_query($conn, $sql);
 
     if (!$result) {
-        printf("Error: %s\n", mysqli_error($conn));
+        error_log(mysqli_error($conn));
         exit();
     }
 }

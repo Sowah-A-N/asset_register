@@ -1,12 +1,5 @@
 <?php
-session_start();
-if (!isset($_SESSION['username'])) {
-  header("Location:../login/");
-  die();
-}
-$username = $_SESSION['username'];
-include "../datacon.php";
-
+require_once '../init.php';
 if (isset($_POST['add'])) {
 
 
@@ -149,7 +142,7 @@ if (isset($_POST['add'])) {
                     $sql = "SELECT * FROM asset_location";
                     $result = mysqli_query($conn, $sql);
                     if (!$result) {
-                      printf("Error: %s\n", mysqli_error($conn));
+                      error_log(mysqli_error($conn));
                       exit();
                     } ?>
                     <br />
@@ -198,7 +191,7 @@ if (isset($_POST['archive_location'])) {
     if (!$moveToArchiveResult) {
         // Rollback the transaction on failure
         mysqli_rollback($conn);
-        echo '<script>alert("Error archiving Location: ' . mysqli_error($conn) . '"); window.location.href = "index.php";</script>';
+        error_log(mysqli_error($conn)); echo '<script>alert("A database error occurred."); window.location.href = "index.php";</script>';
         exit();
     }
 
@@ -207,7 +200,7 @@ if (isset($_POST['archive_location'])) {
     if (!$deleteFromLocationResult) {
         // Rollback the transaction on failure
         mysqli_rollback($conn);
-        echo '<script>alert("Error deleting from asset_location table: ' . mysqli_error($conn) . '"); window.location.href = "index.php";</script>';
+        error_log(mysqli_error($conn)); echo '<script>alert("A database error occurred."); window.location.href = "index.php";</script>';
         exit();
     }
 

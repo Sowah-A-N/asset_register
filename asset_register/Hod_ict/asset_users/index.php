@@ -1,12 +1,5 @@
 <?php
-session_start();
-if (!isset($_SESSION['username'])) {
-  header("Location:../login/");
-  die();
-}
-$username = $_SESSION['username'];
-include "../datacon.php";
-
+require_once '../init.php';
 if(isset($_POST['add']))
 {
 
@@ -178,7 +171,7 @@ if(isset($_POST['add']))
                         $sql="SELECT * FROM asset_users ";
                         $result=mysqli_query($conn, $sql);
                         if (!$result) {
-                            printf("Error: %s\n", mysqli_error($conn));
+                            error_log(mysqli_error($conn));
                             exit();
                         } ?>
                         <br />

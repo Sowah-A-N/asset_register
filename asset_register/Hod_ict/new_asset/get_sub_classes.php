@@ -17,7 +17,7 @@ if ($result) {
         echo "<option value=''>No sub-classes available for asset class ID: $assetClassId</option>";
     }
 } else {
-    echo "<option value=''>Error executing query: " . mysqli_error($conn) . "</option>";
+    error_log(mysqli_error($conn)); echo "<option value=''>Error loading data</option>";
 }
 
 mysqli_close($conn);

@@ -1,10 +1,5 @@
 <?php
-require_once __DIR__ . '/../../security.php';
-secure_session_start();
-require_auth('../login/');
-
-$username = $_SESSION['username'];
-include '../datacon.php';
+require_once '../init.php';
 
 if (!$conn) {
     error_log('DB connection failed: ' . mysqli_connect_error());

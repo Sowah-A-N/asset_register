@@ -1,13 +1,5 @@
 <?php
-session_start();
-if (!isset($_SESSION['username']))
-{
-    header("Location:../login/");
-    die();
-}
-$username=$_SESSION['username'];
-include "datacon.php";
-
+require_once '../init.php';
 $sql="SELECT COUNT(table_id) FROM rmu_active_students";
 $result=mysqli_query($conn,$sql);
 $row=mysqli_fetch_array($result);

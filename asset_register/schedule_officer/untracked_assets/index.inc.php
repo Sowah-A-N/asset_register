@@ -30,7 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (mysqli_query($conn, $sql)) {
         echo "<script>alert('Asset successfully added and disposed off!'); window.location.href='../view_untracked';</script>";
     } else {
-        echo "Error: " . mysqli_error($conn);
+        error_log(mysqli_error($conn)); echo "<script>alert('A database error occurred.'); window.location.href='../view_untracked';</script>";
     }
 
     // Close connection

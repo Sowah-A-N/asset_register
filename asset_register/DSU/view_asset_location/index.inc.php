@@ -173,7 +173,7 @@ include "../datacon.php";
                                 if(!$result)
                                 {
                                         echo "Not Selected";
-                                        echo "Errormessage:".mysqli_error($conn);
+                                        error_log(mysqli_error($conn));
                                         exit();
                                         
                                 }

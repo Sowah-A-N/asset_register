@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once '../init.php';
+
 /*if (!isset($_SESSION['user_name']))
 {
     header("Location:/rmuclearance/login/");

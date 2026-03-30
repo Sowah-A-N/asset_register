@@ -141,7 +141,7 @@
                         $resultAsset = mysqli_query($conn, $sqlAsset);
                     
                         if (!$resultAsset) {
-                            die("Error in SQL query (Asset): " . mysqli_error($conn));
+                            error_log(mysqli_error($conn)); die('A database error occurred.');
                         }
                     
                         $rowAsset = mysqli_fetch_assoc($resultAsset);
@@ -153,7 +153,7 @@
                         $resultAssetClasses = mysqli_query($conn, $sqlAssetClasses);
                     
                         if (!$resultAssetClasses) {
-                            die("Error in SQL query (Asset Classes): " . mysqli_error($conn));
+                            error_log(mysqli_error($conn)); die('A database error occurred.');
                         }
                     
                         $rowAssetClasses = mysqli_fetch_assoc($resultAssetClasses);
@@ -178,7 +178,7 @@
                         $resultDepRate = mysqli_query($conn, $sqlDepRate);
                     
                         if (!$resultDepRate) {
-                            die("Error in SQL query (Depreciation Rate): " . mysqli_error($conn));
+                            error_log(mysqli_error($conn)); die('A database error occurred.');
                         }
                     
                         $rowDepRate = mysqli_fetch_assoc($resultDepRate);
@@ -192,7 +192,7 @@
                         $resultAccDeprOpeningBal = mysqli_query($conn, $sqlAccDeprOpeningBal);
                     
                         if (!$resultAccDeprOpeningBal) {
-                            die("Error in SQL query (Accumulated Depreciation Opening Balance): " . mysqli_error($conn));
+                            error_log(mysqli_error($conn)); die('A database error occurred.');
                         }
                     
                         $rowAccDeprOpeningBal = mysqli_fetch_assoc($resultAccDeprOpeningBal);

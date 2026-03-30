@@ -10,7 +10,7 @@ $sqlAsset = "SELECT * FROM assets WHERE asset_id = $assetId";
 $resultAsset = mysqli_query($conn, $sqlAsset);
 
 if (!$resultAsset) {
-    die("Error in SQL query (Asset): " . mysqli_error($conn));
+    error_log(mysqli_error($conn)); die('A database error occurred.');
 }
 
 $rowAsset = mysqli_fetch_assoc($resultAsset);
@@ -21,7 +21,7 @@ $sqlAssetClasses = "SELECT opening_bal, opbal_plus_additions, estimated_life, de
 $resultAssetClasses = mysqli_query($conn, $sqlAssetClasses);
 
 if (!$resultAssetClasses) {
-    die("Error in SQL query (Asset Classes): " . mysqli_error($conn));
+    error_log(mysqli_error($conn)); die('A database error occurred.');
 }
 
 $rowAssetClasses = mysqli_fetch_assoc($resultAssetClasses);

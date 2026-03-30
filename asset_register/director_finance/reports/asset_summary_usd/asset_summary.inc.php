@@ -1,7 +1,6 @@
 <?php
 
-session_start();
-include "./datacon.php";
+require_once '../../init.php';
 include "functions.php";
 
 if (isset($_POST['summaryYear'])) {

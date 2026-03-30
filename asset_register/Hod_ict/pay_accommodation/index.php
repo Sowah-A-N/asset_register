@@ -1,13 +1,5 @@
 <?php
-session_start();
-if (!isset($_SESSION['username']))
-{
-    header("Location:../login/");
-    die();
-}
-$username=$_SESSION['username'];
-include "datacon.php";
-
+require_once '../init.php';
 $sql="SELECT room_Status FROM  student_applications WHERE index_number='$username' ";
 $result=mysqli_query($conn, $sql);
 $row=mysqli_fetch_array($result);
@@ -57,7 +49,7 @@ else
               if(!$result)
               {
                   echo "Not Inserted";
-                  echo "Errormessage:".mysqli_error($conn);
+                  error_log(mysqli_error($conn));
                   exit();
               }
 

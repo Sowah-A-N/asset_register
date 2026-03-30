@@ -37,5 +37,6 @@ if (!$row || !password_verify($pass, $row['user_password'])) {
 
 session_regenerate_id(true);
 $_SESSION['username'] = $row['username'];
+$_SESSION['role']     = 'registry';
 header('Location: ../admin_dashboard/?login=success');
 exit();

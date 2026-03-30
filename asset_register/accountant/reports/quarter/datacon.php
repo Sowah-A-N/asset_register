@@ -1,9 +1,4 @@
 <?php
- $dbServername= "127.0.0.1";
-//  $dbUsername= "assets";
-//  $dbPassword= "t8f258!Py";
-$dbUsername = "root";
- $dbPassword = "";
- $dbName= "asset_register_new";
-
- $conn= mysqli_connect($dbServername, $dbUsername, $dbPassword, $dbName);
+$_d=__DIR__; while(!file_exists($_d.'/config/database.php')&&$_d!='/') $_d=dirname($_d);
+require_once $_d.'/config/database.php'; unset($_d);
+$conn=get_db_connection();

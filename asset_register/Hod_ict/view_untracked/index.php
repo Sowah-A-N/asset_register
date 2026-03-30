@@ -1,13 +1,6 @@
 <?php
 
-session_start();
-if (!isset($_SESSION['username'])) {
-  header("Location:../login/");
-  die();
-}
-$username = $_SESSION['username'];
-include "../datacon.php";
-
+require_once '../init.php';
 if (!$conn) {
   die("Connection failed: " . mysqli_connect_error());
 }
@@ -130,7 +123,7 @@ $resultAssetClasses = mysqli_query($conn, $sqlAssetClasses);
 
 // Check if the query was successful
 if (!$resultAssetClasses) {
-    die("Error in SQL query (Asset Classes): " . mysqli_error($conn));
+    error_log(mysqli_error($conn)); die('A database error occurred.');
 }
 
 // Check if there are any asset classes
@@ -156,7 +149,7 @@ if (mysqli_num_rows($resultAssetClasses) > 0) {
           $result = mysqli_query($conn, $sql);
 
           if (!$result) {
-              printf("Error: %s\n", mysqli_error($conn));
+              error_log(mysqli_error($conn));
               exit();
           }
       } else {
@@ -165,7 +158,7 @@ if (mysqli_num_rows($resultAssetClasses) > 0) {
           $result = mysqli_query($conn, $sql);
 
           if (!$result) {
-              printf("Error: %s\n", mysqli_error($conn));
+              error_log(mysqli_error($conn));
               exit();
           }
       }
@@ -175,7 +168,7 @@ if (mysqli_num_rows($resultAssetClasses) > 0) {
       $result = mysqli_query($conn, $sql);
 
       if (!$result) {
-          printf("Error: %s\n", mysqli_error($conn));
+          error_log(mysqli_error($conn));
           exit();
       }
   }

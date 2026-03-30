@@ -1,13 +1,5 @@
 <?php
-session_start();
-if (!isset($_SESSION['username']))
-{
-    header("Location:../login/");
-    die();
-}
-$username=$_SESSION['username'];
-include "datacon.php";
-
+require_once '../init.php';
 if(isset($_POST['add']))
 {
    $index_no=mysqli_real_escape_string($conn,$_POST['index_no']);
@@ -38,7 +30,7 @@ if(isset($_POST['add']))
       if(!$result)
       {
           echo "Not Inserted";
-          echo "Errormessage:".mysqli_error($conn);
+          error_log(mysqli_error($conn));
           exit();
           
       }

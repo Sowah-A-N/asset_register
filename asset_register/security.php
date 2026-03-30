@@ -1,38 +1,44 @@
 <?php
 /**
- * security.php — shared security helpers
- * Include ONCE near the top of every entry-point PHP file, BEFORE session_start().
+ * security.php — shared security helpers (V2)
  *
- * Usage:
- *   require_once __DIR__ . '/../security.php';   // adjust path as needed
- *   // session_start() is called inside secure_session_start()
+ * Include once near the top of every entry-point PHP file:
+ *
+ *   require_once __DIR__ . '/../security.php';   // adjust depth as needed
  *   secure_session_start();
+ *   require_auth('../login/');
+ *   require_role('schedule_officer');             // optional per-page RBAC
  */
 
+// ── Session ───────────────────────────────────────────────────────────────────
+
 /**
- * Start a session with hardened cookie parameters.
- * Call this instead of session_start() throughout the application.
+ * Start a session with hardened cookie parameters and idle-timeout enforcement.
+ * Call this instead of session_start() everywhere.
  */
 function secure_session_start(): void
 {
     if (session_status() === PHP_SESSION_ACTIVE) {
-        return; // already started
+        return;
     }
 
+    $secure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+
     session_set_cookie_params([
-        'lifetime' => 0,             // session cookie (expires on browser close)
+        'lifetime' => 0,
         'path'     => '/',
-        'domain'   => '',            // current domain only
-        'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
-        'httponly' => true,          // inaccessible to JavaScript
-        'samesite' => 'Strict',      // no cross-site requests
+        'domain'   => '',
+        'secure'   => $secure,
+        'httponly' => true,
+        'samesite' => 'Strict',
     ]);
 
     session_start();
 
-    // Enforce an idle timeout (30 minutes)
+    // 30-minute idle timeout
     $idleLimit = 1800;
-    if (isset($_SESSION['_last_activity']) && (time() - $_SESSION['_last_activity']) > $idleLimit) {
+    if (isset($_SESSION['_last_activity'])
+        && (time() - $_SESSION['_last_activity']) > $idleLimit) {
         session_unset();
         session_destroy();
         session_start();
@@ -40,23 +46,41 @@ function secure_session_start(): void
     $_SESSION['_last_activity'] = time();
 }
 
+// ── Authentication ────────────────────────────────────────────────────────────
+
 /**
- * Require an authenticated session. Redirects to $loginPath if not logged in.
- *
- * @param string $loginPath  Relative or absolute URL of the login page.
+ * Redirect to $loginPath and exit if no authenticated session exists.
  */
 function require_auth(string $loginPath = '../login/'): void
 {
-    if (!isset($_SESSION['username'])) {
+    if (empty($_SESSION['username'])) {
         header('Location: ' . $loginPath);
         exit;
     }
 }
 
-// ─── CSRF ────────────────────────────────────────────────────────────────────
+/**
+ * Enforce that the logged-in user has exactly $requiredRole.
+ * Sends HTTP 403 and exits on mismatch. Call after require_auth().
+ *
+ * Roles in use: schedule_officer | hod_ict | accountant | budget_officer |
+ *               director_finance | sia | dsu | registry
+ */
+function require_role(string $requiredRole): void
+{
+    $actual = $_SESSION['role'] ?? '';
+    if ($actual !== $requiredRole) {
+        http_response_code(403);
+        // Show a minimal page rather than a raw string so the layout stays intact
+        include_once __DIR__ . '/partials/403.php';
+        exit;
+    }
+}
+
+// ── CSRF ──────────────────────────────────────────────────────────────────────
 
 /**
- * Return (and lazily create) the CSRF token for this session.
+ * Return (and lazily create) the session CSRF token.
  */
 function csrf_token(): string
 {
@@ -67,11 +91,12 @@ function csrf_token(): string
 }
 
 /**
- * Render a hidden CSRF input field ready to embed in any HTML form.
+ * Render a hidden CSRF input field for embedding in HTML forms.
  */
 function csrf_field(): string
 {
-    return '<input type="hidden" name="_csrf_token" value="' . htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') . '">';
+    return '<input type="hidden" name="_csrf_token" value="'
+        . htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') . '">';
 }
 
 /**
@@ -87,12 +112,72 @@ function csrf_verify(): void
     }
 }
 
-// ─── Output escaping ─────────────────────────────────────────────────────────
+// ── Flash messages ────────────────────────────────────────────────────────────
+
+/**
+ * Queue a flash message for the next page load.
+ *
+ * @param string $type    Bootstrap alert type: success | danger | warning | info
+ * @param string $message Plain-text message (will be HTML-escaped on output).
+ */
+function flash(string $type, string $message): void
+{
+    $_SESSION['_flash'][] = ['type' => $type, 'message' => $message];
+}
+
+/**
+ * Retrieve and clear all queued flash messages.
+ *
+ * @return array<int, array{type: string, message: string}>
+ */
+function get_flash_messages(): array
+{
+    $msgs = $_SESSION['_flash'] ?? [];
+    unset($_SESSION['_flash']);
+    return $msgs;
+}
+
+// ── Audit logging ─────────────────────────────────────────────────────────────
+
+/**
+ * Write one row to the audit_log table.
+ *
+ * Requires a $conn (mysqli) in scope. Safe to call even if the table does not
+ * yet exist — errors are logged server-side and silently swallowed so they
+ * never break a page.
+ *
+ * @param mysqli $conn
+ * @param string $action    Verb: 'create_asset' | 'move_asset' | 'archive_asset' |
+ *                          'dispose_asset' | 'login' | 'logout' | etc.
+ * @param int|null  $assetId  The affected asset_id (null for non-asset actions).
+ * @param string|null $detail  Optional free-text detail / JSON snapshot.
+ */
+function audit_log(mysqli $conn, string $action, ?int $assetId = null, ?string $detail = null): void
+{
+    $username  = $_SESSION['username'] ?? 'anonymous';
+    $role      = $_SESSION['role']     ?? '';
+    $ip        = $_SERVER['REMOTE_ADDR'] ?? '';
+
+    $stmt = @mysqli_prepare(
+        $conn,
+        "INSERT INTO audit_log (username, role, action, asset_id, detail, ip_address, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, NOW())"
+    );
+    if (!$stmt) {
+        error_log('audit_log: prepare failed — ' . mysqli_error($conn));
+        return;
+    }
+    mysqli_stmt_bind_param($stmt, 'sssiss', $username, $role, $action, $assetId, $detail, $ip);
+    if (!mysqli_stmt_execute($stmt)) {
+        error_log('audit_log: execute failed — ' . mysqli_error($conn));
+    }
+    mysqli_stmt_close($stmt);
+}
+
+// ── Output escaping ───────────────────────────────────────────────────────────
 
 /**
  * HTML-encode a value for safe output inside HTML content or attributes.
- *
- * @param mixed $value
  */
 function esc($value): string
 {

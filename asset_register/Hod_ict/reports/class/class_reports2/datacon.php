@@ -1,7 +1,4 @@
 <?php
- $dbServername= "localhost";
- $dbUsername= "root";
- $dbPassword= "";
- $dbName= "asset_register";
-
- $conn= mysqli_connect($dbServername, $dbUsername, $dbPassword, $dbName);
+$_d=__DIR__; while(!file_exists($_d.'/config/database.php')&&$_d!='/') $_d=dirname($_d);
+require_once $_d.'/config/database.php'; unset($_d);
+$conn=get_db_connection('dsu');

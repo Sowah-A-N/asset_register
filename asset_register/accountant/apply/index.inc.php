@@ -44,7 +44,7 @@ if(isset($_POST['submit']))
           if(!$result)
           {
               echo "Not Inserted";
-              echo "Errormessage:".mysqli_error($conn);
+              error_log(mysqli_error($conn));
               exit();
           }
 
