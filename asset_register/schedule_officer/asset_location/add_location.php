@@ -33,7 +33,7 @@ $result = $conn->query($sql);
 // Check if the query was successful
 if ($result === false) {
     // Print an error message and the SQL error details
-    echo "Error executing the query: " . $conn->error;
+    error_log($conn->error); echo '<script>alert("A database error occurred."); window.location=\'index.php\';</script>';
 } else {
     // Check if there are results
     if ($result->num_rows > 0) {

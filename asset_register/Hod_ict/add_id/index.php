@@ -66,7 +66,7 @@ if (isset($_POST['submit_move'])) {
         if ($conn->query($updateQuery) === TRUE) {
           echo '<script type="text/javascript">alert("Asset ID Number Successfully added.");window.location=\'index.php\';</script>';
         } else {
-          echo '<script type="text/javascript">alert("Error adding Asset ID Number.");window.location=\'index.php\';</script>'; $conn->error;
+          echo '<script type="text/javascript">alert("Error adding Asset ID Number.");window.location=\'index.php\';</script>'; error_log($conn->error);
         }
     }
 

@@ -27,7 +27,7 @@ if (isset($_POST['add'])) {
         echo '<script type="text/javascript">alert("Asset location successfully added.");window.location=\'index.php\';</script>';
       } else {
         echo '<script type="text/javascript">alert("Error adding asset location.");window.location=\'index.php\';</script>';
-        $conn->error;
+        error_log($conn->error);
       }
     }
   }

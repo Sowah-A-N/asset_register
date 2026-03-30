@@ -17,6 +17,7 @@ function dd($data)
 
 
 function assetClassSummary($year){
+    $year = (int)$year;
 
     global $conn;
     
@@ -40,7 +41,7 @@ function assetClassSummary($year){
                         JOIN asset_additions_year b 
                             ON a.asset_class COLLATE utf8mb4_general_ci = b.asset_class COLLATE utf8mb4_general_ci
                             AND a.year = b.year
-                        WHERE a.year = '{$year}'
+                        WHERE a.year = {$year}
                         ORDER BY a.asset_class, a.year;";
                         
 

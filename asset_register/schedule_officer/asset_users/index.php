@@ -54,7 +54,7 @@ if(isset($_POST['add']))
         if ($conn->query($insert_query) === TRUE) {
           echo '<script type="text/javascript">alert("New User added Successfully.");window.location=\'index.php\';</script>';
         } else {
-            echo "Error adding User: " . $conn->error;
+            error_log($conn->error); echo '<script>alert("A database error occurred."); window.location=\'index.php\';</script>';
         }
     }
   } 

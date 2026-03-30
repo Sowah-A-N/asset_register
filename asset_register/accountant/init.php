@@ -20,9 +20,9 @@ $username = $_SESSION['username'];
 
 // Database connection — uses config/database.php (reads from .env)
 $_d = __DIR__;
-while (!file_exists($_d . '/config/database.php') && $_d !== '/') {{
+while (!file_exists($_d . '/config/database.php') && $_d !== '/') {
     $_d = dirname($_d);
-}}
+}
 require_once $_d . '/config/database.php';
 unset($_d);
 $conn = get_db_connection();

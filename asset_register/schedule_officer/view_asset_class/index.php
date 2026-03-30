@@ -36,10 +36,10 @@ if(isset($_POST['add']))
             if ($conn->query($insert_opbal_query) === TRUE) {
                 echo '<script type="text/javascript">alert("Asset Class added Successfully.");window.location=\'index.php\';</script>';
             } else {
-                echo "Error inserting into asset_class_opbal_year: " . $conn->error;
+                error_log($conn->error); echo '<script>alert("A database error occurred."); window.location=\'index.php\';</script>';
             }
         } else {
-            echo "Error adding Asset Class: " . $conn->error;
+            error_log($conn->error); echo '<script>alert("A database error occurred."); window.location=\'index.php\';</script>';
         }
     }
   }

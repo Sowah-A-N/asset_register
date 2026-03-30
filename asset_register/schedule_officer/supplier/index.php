@@ -32,7 +32,7 @@ if(isset($_POST['add']))
         if ($conn->query($insert_query) === TRUE) {
           echo '<script type="text/javascript">alert("Supplier successfully added.");window.location=\'index.php\';</script>';
         } else {
-          echo '<script type="text/javascript">alert("Error adding supplier.");window.location=\'index.php\';</script>'; $conn->error;
+          echo '<script type="text/javascript">alert("Error adding supplier.");window.location=\'index.php\';</script>'; error_log($conn->error);
         }
     }
 

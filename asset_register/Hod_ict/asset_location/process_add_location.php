@@ -21,7 +21,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($conn->query($sql) === TRUE) {
         echo '<script type="text/javascript">alert("Location Added Succesfully");window.location="../dashboard/";</script>';
     } else {
-        echo "Error adding location: " . $conn->error;
+        error_log($conn->error); echo '<script>alert("A database error occurred."); window.location=\'index.php\';</script>';
     }
 }
 

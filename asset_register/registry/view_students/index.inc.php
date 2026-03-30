@@ -1,6 +1,7 @@
 <?php
 
-session_start();
+require_once __DIR__ . "/../../security.php";
+secure_session_start();
 if (!isset($_SESSION['user_name']))
 {
     header("Location:/staff_allowance/login/");

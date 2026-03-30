@@ -40,7 +40,7 @@ elseif ($row_loc_code['count'] > 0) {
         if ($conn->query($insert_query) === TRUE) {
             echo "<script>alert(' Location Added Successfully'); </script>";
         } else {
-            echo "Error adding location: " . $conn->error;
+            error_log($conn->error); echo '<script>alert("A database error occurred."); window.location=\'index.php\';</script>';
         }
     }
 

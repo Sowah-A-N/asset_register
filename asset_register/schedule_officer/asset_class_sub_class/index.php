@@ -43,7 +43,7 @@ $asset_name=$row["asset_class"];
           echo '<script type="text/javascript">alert("Asset Sub-Class added Successfully.");window.location=\'index.php\';</script>';
 
         } else {
-            echo "Error adding Sub-Class: " . $conn->error;
+            error_log($conn->error); echo '<script>alert("A database error occurred."); window.location=\'index.php\';</script>';
         }
     }
 

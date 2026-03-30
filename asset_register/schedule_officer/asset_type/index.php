@@ -34,7 +34,7 @@ if(isset($_POST['add']))
           echo '<script type="text/javascript">alert("Asset Type added Successfully.");window.location=\'index.php\';</script>';
 
         } else {
-            echo "Error adding Supplier: " . $conn->error;
+            error_log($conn->error); echo '<script>alert("A database error occurred."); window.location=\'index.php\';</script>';
         }
     }
 
