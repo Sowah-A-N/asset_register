@@ -30,8 +30,9 @@
     </IfModule>
 </FilesMatch>
 
-# Block direct access to PHP action/include files that should only be invoked internally
-<FilesMatch "^(datacon|login\.inc|index\.inc|forgotPassword\.inc|security)\.php$">
+# Block direct access to PHP include files that should only be invoked internally
+# NOTE: login.inc.php and forgotPassword.inc.php are excluded — they are direct form POST targets
+<FilesMatch "^(datacon|index\.inc|security)\.php$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
