@@ -1,110 +1,142 @@
+<?php
+require_once '../../init.php';
+
+$currentYear  = (int)date('Y');
+$selectedYear = isset($_POST['asset_year_select']) && $_POST['asset_year_select'] !== ''
+    ? (int)$_POST['asset_year_select']
+    : $currentYear;
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yearly Additions</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-
+    <title>Yearly Additions Report</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous">
+    <style>
+        @media print { .no-print { display: none !important; } }
+    </style>
 </head>
-<body>
-    <!--label for="">From:</label>
-    <input type="date" name="from" id="from-date"><br />
+<body class="p-3">
 
-    <label for="">To:</label>
-    <input type="date" name="to" id="to-date"><br />
+    <div class="no-print d-flex align-items-center gap-2 mb-3">
+        <a href="../" class="btn btn-outline-secondary btn-sm">&larr; Back To Reports</a>
+        <h5 class="mb-0 ms-2">Yearly Additions Report</h5>
+    </div>
 
-    <button type="submit">Generate</button-->
-
-    <form action="" method="post" class="flex items-center space-x-4">
-        <label for="asset_year_select" class="text-lg font-semibold">Select Acquisition Year:</label>
-        <select name="asset_year_select" id="asset_year_select" class="p-2 border border-gray-300 rounded">
-            <option value="" selected> --Select Year--</option>
-            
-            <?php
-            $currentYear = date("Y");
-            $startYear = $currentYear - 51;
-
-            for ($year = $currentYear; $year >= $startYear; $year--) {
-                echo "<option value=\"$year\">$year</option>";
-            }
-            ?>
-        </select>
-
-        <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700">Filter</button>
+    <form action="" method="POST" class="no-print row g-2 align-items-center mb-4">
+        <div class="col-auto">
+            <label for="asset_year_select" class="form-label mb-0">Acquisition Year:</label>
+        </div>
+        <div class="col-auto">
+            <select name="asset_year_select" id="asset_year_select" class="form-select form-select-sm">
+                <option value="">-- Select Year --</option>
+                <?php for ($y = $currentYear; $y >= $currentYear - 51; $y--): ?>
+                    <option value="<?php echo $y; ?>" <?php echo ($y === $selectedYear && isset($_POST['asset_year_select'])) ? 'selected' : ''; ?>>
+                        <?php echo $y; ?>
+                    </option>
+                <?php endfor; ?>
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+            <button type="button" onclick="window.print()" class="btn btn-outline-secondary btn-sm">Print</button>
+        </div>
     </form>
-   
+
+    <?php if (isset($_POST['asset_year_select']) && $_POST['asset_year_select'] !== ''): ?>
+
+    <!-- Report header -->
+    <div class="text-center mb-3">
+        <h4 class="fw-bold text-uppercase mb-0">REGIONAL MARITIME UNIVERSITY</h4>
+        <h5 class="fw-bold">ASSETS ADDITIONS REPORT — YEAR <?php echo htmlspecialchars($selectedYear); ?></h5>
+        <p class="text-muted small mb-0">Assets acquired during the financial year (GH₵)</p>
+        <hr>
+    </div>
 
     <?php
+    $stmt = mysqli_prepare($conn,
+        "SELECT asset_id, asset_name, asset_class, location, acquisition_date,
+                dollar_rate_used, additions, additions_dollar
+         FROM assets
+         WHERE YEAR(acquisition_date) = ?
+         ORDER BY asset_class, acquisition_date");
 
-        $currentYear = date("Y");
-        //echo $currentYear;
+    $rows       = [];
+    $additionSum = 0.0;
 
-        $additionSum = 0;
-
-        $selectedYear = (!isset($_POST['asset_year_select'])) ? $currentYear : $_POST['asset_year_select'];
-
-        //$additionalQuery = " WHERE asset_class = {}";
-
-        #if (!isset($_POST[])){ }
-
-        include "../datacon.php";
-
-        $query = "SELECT * FROM assets WHERE YEAR(acquisition_date) = {$selectedYear}";
-
-        $result = $conn->query($query);
-
-        if($result->num_rows > 0){
-            echo "<div class='h-screen overflow-y-scroll mx-auto w-3/4 bg-white p-4 shadow-md rounded mt-4'>";
-            echo "<h2 class='mt-6 text-xl font-bold mb-4'>Search Results for {$selectedYear}:</h2>";
-            echo "<table class='table-auto mb-6'>";
-            echo "<thead><tr><th class='border px-4 py-2 sticky top-0 '>Asset Name</th>
-                    <th class='border px-4 py-2'>Asset Class</th>
-                    <th class='border px-4 py-2'>Location</th>
-                    <th class='border px-4 py-2'>Acquisition Date</th>
-                    <th class='border px-4 py-2'>Dollar Rate Used</th>
-                    <th class='border px-4 py-2'>Additions (GHS) </th>
-                    <th class='border px-4 py-2'>Additions (USD) </th></tr></thead>";
-            echo "<tbody>";
-
-            while($row = $result->fetch_assoc()){
-                echo "<tr id =". $row['asset_id'] ." class=' hover:bg-gray-100'>
-                <td class='border px-4 py-2'>" . $row['asset_name'] . "</td>
-                <td class='border px-4 py-2'>" . $row['asset_class'] . "</td>
-                <td class='border px-4 py-2'>" . $row['location'] . "</td>
-                <td class='border px-4 py-2'>" . date('d-m-Y', strtotime($row['acquisition_date'])) . "</td>
-                <td class='border px-4 py-2'>" . $row['dollar_rate_used'] . "</td>
-                <td class='border px-4 py-2'>" . number_format($row['additions'], 2, ".", ",") . "</td>
-                <td class='border px-4 py-2'>" . number_format($row['additions']/$row['dollar_rate_used'], 2, ".", ",") . "</td>
-                <td class='border px-4 py-2'>" . "<button class='bg-blue-500 text-white px-4 py-2 rounded' onclick=\"window.location.href='../individual_assets/index.php?asset_id={$row['asset_id']}'\">"."View Records"."</button>" . "</td></tr>";
-
-
-                $additionSum = $additionSum + $row['additions'];
-            }
-            echo "<tr><td class='border px-4 py-2'>".""."</td>
-            <td class='border px-4 py-2'>".""."</td>
-            <td class='border px-4 py-2'>".""."</td>
-            <td class='border px-4 py-2'>".""."</td>
-            <td class='border px-4 py-2'>" . "" . "</td>
-            <td class='border px-4 py-2'>".""."</td></tr>";
-
-    echo "<tr><td class='border px-4 py-2'>".""."</td>
-            <td class='border px-4 py-2'>".""."</td>
-            <td class='border px-4 py-2'>".""."</td>
-            <td class='border px-4 py-2'>".""."</td>
-            <td class='border px-4 py-2'>" . "Additions for {$selectedYear} : " . "</td>
-            <td class='border px-4 py-2'>".number_format($additionSum, 2, ".", ",")."</td></tr>";
-
-     
-        echo "</tbody>";
-        echo "</div>";
-        //echo "Additions for {$selectedYear} : {$additionSum}";
-
-
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $selectedYear);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        while ($row = mysqli_fetch_assoc($result)) {
+            $rows[]      = $row;
+            $additionSum += (float)$row['additions'];
         }
-
+        mysqli_stmt_close($stmt);
+    }
     ?>
-    
-</body>
 
+    <?php if (empty($rows)): ?>
+        <div class="alert alert-warning">No assets acquired in <?php echo htmlspecialchars($selectedYear); ?>.</div>
+    <?php else: ?>
+    <div class="table-responsive">
+    <table class="table table-bordered table-striped table-sm" style="font-size:0.85rem">
+        <thead class="table-primary">
+            <tr>
+                <th>#</th>
+                <th>Asset Name</th>
+                <th>Asset Class</th>
+                <th>Location</th>
+                <th>Acquisition Date</th>
+                <th class="text-end">FX Rate</th>
+                <th class="text-end">Additions (GH₵)</th>
+                <th class="text-end">Additions (USD)</th>
+                <th class="no-print">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php $counter = 1; foreach ($rows as $row): ?>
+            <tr>
+                <td><?php echo $counter++; ?></td>
+                <td><?php echo htmlspecialchars($row['asset_name']); ?></td>
+                <td><?php echo htmlspecialchars($row['asset_class']); ?></td>
+                <td><?php echo htmlspecialchars($row['location']); ?></td>
+                <td><?php echo date('d-m-Y', strtotime($row['acquisition_date'])); ?></td>
+                <td class="text-end"><?php echo number_format((float)$row['dollar_rate_used'], 4); ?></td>
+                <td class="text-end"><?php echo number_format((float)$row['additions'], 2); ?></td>
+                <td class="text-end">
+                    <?php
+                    $rate = (float)$row['dollar_rate_used'];
+                    echo $rate > 0
+                        ? number_format((float)$row['additions'] / $rate, 2)
+                        : '-';
+                    ?>
+                </td>
+                <td class="no-print">
+                    <a href="../individual_assets/index.php?asset_id=<?php echo (int)$row['asset_id']; ?>"
+                       class="btn btn-sm btn-outline-primary">View</a>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+        <tfoot class="table-secondary fw-bold">
+            <tr>
+                <td colspan="6" class="text-end">Total Additions for <?php echo htmlspecialchars($selectedYear); ?>:</td>
+                <td class="text-end"><?php echo number_format($additionSum, 2); ?></td>
+                <td colspan="2"></td>
+            </tr>
+        </tfoot>
+    </table>
+    </div>
+    <p class="text-muted small mt-2">
+        Report generated on <?php echo date('d M Y, H:i'); ?> &bull; <?php echo count($rows); ?> asset(s) found
+    </p>
+    <?php endif; ?>
+
+    <?php endif; ?>
+
+</body>
 </html>

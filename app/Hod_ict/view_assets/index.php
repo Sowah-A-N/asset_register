@@ -166,6 +166,72 @@ if (isset($_POST['submit_disposal']) && isset($_POST['asset_id'])) {
     exit();
 }
 
+// Reclassify asset (Issues 16 & 17)
+if (isset($_POST['submit_reclassify']) && isset($_POST['asset_id'])) {
+    csrf_verify();
+    $reclassAssetId  = (int)$_POST['asset_id'];
+    $newAssetClass   = trim($_POST['new_asset_class']   ?? '');
+    $newSubClass     = trim($_POST['new_sub_class']     ?? '');
+    $reclassReason   = trim($_POST['reclassify_reason'] ?? '');
+
+    if (empty($newAssetClass)) {
+        echo '<script>alert("Please select a new asset class."); window.location.href="index.php";</script>';
+        exit();
+    }
+
+    // Fetch current class for comparison and audit
+    $gs = mysqli_prepare($conn, "SELECT asset_name, asset_class, sub_class FROM assets WHERE asset_id = ? LIMIT 1");
+    mysqli_stmt_bind_param($gs, 'i', $reclassAssetId);
+    mysqli_stmt_execute($gs);
+    $grow = mysqli_fetch_assoc(mysqli_stmt_get_result($gs));
+    mysqli_stmt_close($gs);
+
+    if (!$grow) {
+        echo '<script>alert("Asset not found."); window.location.href="index.php";</script>';
+        exit();
+    }
+
+    $oldAssetClass = $grow['asset_class'];
+    $oldSubClass   = $grow['sub_class'];
+
+    if ($oldAssetClass === $newAssetClass) {
+        echo '<script>alert("Asset is already in this category."); window.location.href="index.php";</script>';
+        exit();
+    }
+
+    // Update asset record
+    $us = mysqli_prepare($conn, "UPDATE assets SET asset_class = ?, sub_class = ? WHERE asset_id = ?");
+    mysqli_stmt_bind_param($us, 'ssi', $newAssetClass, $newSubClass, $reclassAssetId);
+    $ok = mysqli_stmt_execute($us);
+    mysqli_stmt_close($us);
+
+    if (!$ok) {
+        error_log('Reclassify update failed: ' . mysqli_error($conn));
+        echo '<script>alert("Reclassification failed. Please try again."); window.location.href="index.php";</script>';
+        exit();
+    }
+
+    // Log transaction in audit trail (Issue 17)
+    $ls = mysqli_prepare($conn,
+        "INSERT INTO asset_category_changes
+            (asset_id, asset_name, old_asset_class, new_asset_class, old_sub_class, new_sub_class, reason, changed_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    mysqli_stmt_bind_param($ls, 'isssssss',
+        $reclassAssetId, $grow['asset_name'],
+        $oldAssetClass, $newAssetClass,
+        $oldSubClass,   $newSubClass,
+        $reclassReason, $username
+    );
+    mysqli_stmt_execute($ls);
+    mysqli_stmt_close($ls);
+
+    audit_log($conn, 'reclassify_asset', $reclassAssetId,
+        "Reclassified from '{$oldAssetClass}' to '{$newAssetClass}'. Reason: {$reclassReason}");
+
+    echo '<script>alert("Asset successfully reclassified!"); window.location.href="index.php";</script>';
+    exit();
+}
+
 // ── Build main asset query with optional class filter (prepared statement) ─
 
 $assetClassFilter = isset($_GET['asset_class_filter']) && $_GET['asset_class_filter'] !== ''
@@ -327,6 +393,13 @@ $result = mysqli_stmt_get_result($stmt);
                               <input type="hidden" name="asset_id" value="<?= esc($row['asset_id']) ?>">
                               <button type="submit" class="btn btn-success btn-sm">Dispose</button>
                             </form>
+
+                            <!-- Reclassify button (Issue 16) -->
+                            <button type="button" class="btn btn-warning btn-sm"
+                              data-toggle="modal"
+                              data-target="#reclassModal<?= esc($row['asset_id']) ?>">
+                              Reclassify
+                            </button>
                           </td>
                         </tr>
 
@@ -396,6 +469,74 @@ $result = mysqli_stmt_get_result($stmt);
                             </div>
                           </div>
                         </div>
+
+                        <!-- Reclassify Modal (Issue 16 & 17) -->
+                        <div class="modal fade" id="reclassModal<?= esc($row['asset_id']) ?>"
+                          tabindex="-1" role="dialog"
+                          aria-labelledby="reclassModalLabel<?= esc($row['asset_id']) ?>"
+                          aria-hidden="true">
+                          <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title">
+                                  Reclassify Asset: <?= esc($row['asset_name']) ?>
+                                </h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                  <span aria-hidden="true">&times;</span>
+                                </button>
+                              </div>
+                              <div class="modal-body">
+                                <form action="index.php" method="POST">
+                                  <?= csrf_field() ?>
+                                  <input type="hidden" name="asset_id" value="<?= esc($row['asset_id']) ?>">
+                                  <input type="hidden" name="submit_reclassify" value="1">
+
+                                  <div class="form-group">
+                                    <label>Current Category:</label>
+                                    <input type="text" value="<?= esc($row['asset_class']) ?>"
+                                      class="form-control" readonly>
+                                  </div>
+                                  <div class="form-group">
+                                    <label for="new_asset_class_<?= esc($row['asset_id']) ?>">
+                                      New Asset Category: <span class="text-danger">*</span>
+                                    </label>
+                                    <select id="new_asset_class_<?= esc($row['asset_id']) ?>"
+                                      name="new_asset_class" class="form-control" required>
+                                      <option hidden value="">-- Select New Category --</option>
+                                      <?php foreach ($assetClasses as $cls): ?>
+                                        <?php if ($cls !== $row['asset_class']): ?>
+                                          <option value="<?= esc($cls) ?>"><?= esc($cls) ?></option>
+                                        <?php endif; ?>
+                                      <?php endforeach; ?>
+                                    </select>
+                                  </div>
+                                  <div class="form-group">
+                                    <label for="new_sub_class_<?= esc($row['asset_id']) ?>">
+                                      New Sub-class (optional):
+                                    </label>
+                                    <input type="text"
+                                      id="new_sub_class_<?= esc($row['asset_id']) ?>"
+                                      name="new_sub_class" class="form-control"
+                                      placeholder="e.g. Furniture, Servers...">
+                                  </div>
+                                  <div class="form-group">
+                                    <label for="reclassify_reason_<?= esc($row['asset_id']) ?>">
+                                      Reason for Reclassification: <span class="text-danger">*</span>
+                                    </label>
+                                    <textarea id="reclassify_reason_<?= esc($row['asset_id']) ?>"
+                                      name="reclassify_reason" class="form-control" rows="3"
+                                      required placeholder="e.g. Completed WIP transferred to fixed assets"></textarea>
+                                  </div>
+                                  <button type="submit" class="btn btn-warning"
+                                    onclick="return confirm('Reclassify this asset? This action is logged.')">
+                                    Confirm Reclassification
+                                  </button>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
                         <?php endwhile; ?>
                       </tbody>
                     </table>

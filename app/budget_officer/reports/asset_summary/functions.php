@@ -20,77 +20,49 @@ function assetClassSummary($year){
     $year = (int)$year;
 
     global $conn;
-    
-    $assetClassSummarySql = "SELECT 
-                            a.asset_class,
-                            a.year,
-                            a.opening_balance,
-                            a.total_accum_depr_start,
-                            a.total_depr_year_charge,
-                            a.total_accum_depr_end,
-                            a.disposals_depr,
-                            a.net_book_value,
-                            a.expected_life_months,
-                            a.rate,
-                            a.depreciated,
-                            b.total_additions_cedi,
-                            b.total_additions_dollar,
-                            b.total_disposals_cedi,
-                            b.total_disposals_dollar
-                        FROM asset_class_opbal_year a
-                        JOIN asset_additions_year b 
-                            ON a.asset_class COLLATE utf8mb4_general_ci = b.asset_class COLLATE utf8mb4_general_ci
-                            AND a.year = b.year
-                        WHERE a.year = {$year}
-                        ORDER BY a.asset_class, a.year;";
-                        
 
-    /*****
-     * 
-     * SELECT 
-        aay.asset_class,
-        COALESCE(SUM(d.disposal_value), 0) AS total_disposal_value
-        FROM 
-        asset_additions_year aay
-        LEFT JOIN 
-        disposals d 
-            ON aay.asset_class = d.asset_class 
-            AND YEAR(d.date_of_disposal) = {$year}
-        WHERE 
-        aay.year = {$year}
-        GROUP BY 
-        aay.asset_class;
+    // LEFT JOIN so asset classes with no additions_year row (e.g. Building WIP) still appear.
+    // COALESCE guarantees numeric 0 when the right side is NULL.
+    $stmt = mysqli_prepare($conn,
+        "SELECT
+            a.asset_class,
+            a.year,
+            a.opening_balance,
+            a.total_accum_depr_start,
+            a.total_depr_year_charge,
+            a.total_accum_depr_end,
+            a.disposals_depr,
+            a.net_book_value,
+            a.expected_life_months,
+            a.rate,
+            a.depreciated,
+            COALESCE(b.total_additions_cedi,   0) AS total_additions_cedi,
+            COALESCE(b.total_additions_dollar, 0) AS total_additions_dollar,
+            COALESCE(b.total_disposals_cedi,   0) AS total_disposals_cedi,
+            COALESCE(b.total_disposals_dollar, 0) AS total_disposals_dollar
+         FROM asset_class_opbal_year a
+         LEFT JOIN asset_additions_year b
+            ON a.asset_class COLLATE utf8mb4_general_ci = b.asset_class COLLATE utf8mb4_general_ci
+            AND a.year = b.year
+         WHERE a.year = ?
+         ORDER BY a.asset_class");
 
-     */
-
-    $assetClassSummaryResult = mysqli_query($conn, $assetClassSummarySql);
-
-    if ($assetClassSummaryResult) {
-        $assetClassData = [];
-
-        while ($assetClassSummary = mysqli_fetch_assoc($assetClassSummaryResult)) {
-            // $assetClassName = $assetClassSummary['asset_class'];
-            // $openingBalance = $assetClassSummary['opening_balance'];
-            // $totalAccumDeprStart = $assetClassSummary['total_accum_depr_start'];
-            // $totalAccumDeprEnd = $assetClassSummary['total_accum_depr_end'];
-
-            // $assetClassData[] = [
-            //     "asset_class" => $assetClassName,
-            //     "opening_balance" => $openingBalance,
-            //     "total_accum_depr_start" => $totalAccumDeprStart,
-            //     "total_accum_depr_end" => $totalAccumDeprEnd
-            // ];
-
-            $assetClassData[] = $assetClassSummary;
-
-        }
-
-        //var_dump($assetClassData);
-        return $assetClassData;
-
-    } else {
-        echo "Error retrieving data.";
+    if (!$stmt) {
+        error_log('assetClassSummary prepare failed: ' . mysqli_error($conn));
+        return [];
     }
+
+    mysqli_stmt_bind_param($stmt, 'i', $year);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+
+    $assetClassData = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $assetClassData[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+
+    return $assetClassData;
 }
 
 function getUntrackedAssetsByYear($yearOfReport, $assetClass)

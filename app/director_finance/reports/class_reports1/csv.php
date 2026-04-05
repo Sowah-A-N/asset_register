@@ -162,34 +162,45 @@ try {
 
     // dd($assetData["assetsData"]);
     
-    if ($assetData["assetsData"][0]["disposed"]) {
-        foreach ($assetData["assetsData"] as $asset) {
-            $row = [
-                $counter++,
-                $asset["newAssetName"],
-                $asset["newAssetLocation"],
-                $asset["newAssetSerial"],
-                $asset["newAssetDate"],
-                $asset["newAssetAdditions"],
-                $yearOfReport,
-                (trim($asset["newAccumulatedDepreciationStart"]) !== '') ? $asset["newAccumulatedDepreciationStart"] : "-",
-                $asset["newNetBookValue"],
-                $asset["newAssetDepreciationRate"] . "%",
-                $asset["newDepreciationExpense"],
-                $asset["newAccumulatedDepreciation"],
-                '',
-                $asset["newClosingCarryingValue"],
-                $asset["newAssetDollarRate"]
-            ];
-        
-            foreach ($asset["monthsDisplay"] as $monthValue) {
-                $row[] = $monthValue;
-            }
-        
-            $sheet->fromArray([$row], NULL, 'A' . $rowNum);
-            $rowNum++;
+    // Build asset rows — same structure whether disposed or not (Issue 5: populate depreciation for all assets)
+    foreach ($assetData["assetsData"] as $asset) {
+        $accumDeprStart = (isset($asset["newAccumulatedDepreciationStart"]) && trim((string)$asset["newAccumulatedDepreciationStart"]) !== '')
+            ? $asset["newAccumulatedDepreciationStart"]
+            : 0;
+        $deprExpense    = $asset["newDepreciationExpense"]     ?? 0;
+        $accumDeprEnd   = $asset["newAccumulatedDepreciation"] ?? 0;
+        $closingNBV     = $asset["newClosingCarryingValue"]    ?? 0;
+        $netBookValue   = $asset["newNetBookValue"]            ?? 0;
+        $deprRate       = isset($asset["newAssetDepreciationRate"]) ? ($asset["newAssetDepreciationRate"] . "%") : "0%";
+
+        $row = [
+            $counter++,
+            $asset["newAssetName"],
+            $asset["newAssetLocation"],
+            $asset["newAssetSerial"],
+            $asset["newAssetDate"],
+            $asset["newAssetAdditions"],
+            $yearOfReport,
+            $accumDeprStart,
+            $netBookValue,
+            $deprRate,
+            $deprExpense,
+            $accumDeprEnd,
+            isset($asset["disposed"]) && $asset["disposed"] ? 'Yes' : '',
+            $closingNBV,
+            $asset["newAssetDollarRate"]
+        ];
+
+        foreach ($asset["monthsDisplay"] as $monthValue) {
+            $row[] = $monthValue;
         }
-    } else {
+
+        $sheet->fromArray([$row], NULL, 'A' . $rowNum);
+        $rowNum++;
+    }
+
+    if (false) {
+        // legacy dead branch — kept for reference only
         foreach ($assetData["assetsData"] as $asset) {
             $row = [
                 $counter++,
@@ -212,14 +223,14 @@ try {
             foreach ($asset["monthsDisplay"] as $monthValue) {
                 $row[] = "";
             }
-        
+
             $sheet->fromArray([$row], NULL, 'A' . $rowNum);
             $rowNum++;
         }
-    }
-    
-    
-    
+    } // end if(false)
+
+
+
     // Totals
     $totalsRow = $counter + 6;
     
