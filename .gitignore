@@ -7,6 +7,8 @@ vendor/
 
 # Database dumps — contain schema, data, and credential hints
 *.sql
+# Allow v3 migration and seed SQL files to be tracked
+!app_v3/database/**/*.sql
 
 # Archives and generated report output files (not the PHP source in reports/ dirs)
 *.zip
