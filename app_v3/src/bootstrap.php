@@ -46,11 +46,12 @@ require_once SRC . '/config/database.php';
 // Open main connection — available as $conn throughout the app
 $conn = get_db_connection('main');
 
-// 5. Security helpers (auth, csrf, audit, request)
+// 5. Security helpers (auth, csrf, audit, request, flash)
 require_once SRC . '/core/auth.php';
 require_once SRC . '/core/csrf.php';
 require_once SRC . '/core/request.php';
 require_once SRC . '/core/audit.php';
+require_once SRC . '/core/flash.php';
 
 // 6. Role config
 require_once SRC . '/config/roles.php';
