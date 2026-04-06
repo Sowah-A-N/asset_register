@@ -1,0 +1,122 @@
+/* =============================================================================
+   Asset Register v3 — Custom styles
+   Complements Bootstrap 5; do not re-define anything Bootstrap already covers.
+   ============================================================================= */
+
+/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+#sidebar {
+    min-height: calc(100vh - 56px); /* 56px = navbar height */
+    min-width: 240px;
+    max-width: 240px;
+    overflow-y: auto;
+    transition: min-width 0.2s ease, max-width 0.2s ease;
+}
+
+#sidebar.collapsed {
+    min-width: 0;
+    max-width: 0;
+    overflow: hidden;
+}
+
+#page-content-wrapper {
+    min-height: calc(100vh - 56px);
+}
+
+/* ── Sidebar nav links ────────────────────────────────────────────────────── */
+#sidebar .nav-link {
+    padding: 0.45rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    transition: background-color 0.15s;
+}
+
+#sidebar .nav-link:hover,
+#sidebar .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+#sidebar .nav-link.text-white-50 {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+}
+
+/* ── Auth / guest layout ──────────────────────────────────────────────────── */
+.auth-card {
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+}
+
+.auth-card .card-header {
+    border-radius: 1rem 1rem 0 0 !important;
+}
+
+/* ── Tables ───────────────────────────────────────────────────────────────── */
+.table-responsive {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.04);
+}
+
+/* ── Cards ────────────────────────────────────────────────────────────────── */
+.stat-card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    transition: transform 0.15s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-card .stat-icon {
+    font-size: 2.5rem;
+    opacity: 0.15;
+}
+
+/* ── Pagination ───────────────────────────────────────────────────────────── */
+.pagination {
+    flex-wrap: wrap;
+}
+
+/* ── Export buttons bar ───────────────────────────────────────────────────── */
+.export-bar {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+/* ── Print ────────────────────────────────────────────────────────────────── */
+@media print {
+    #sidebar,
+    .navbar,
+    .export-bar,
+    .pagination,
+    .btn,
+    .alert {
+        display: none !important;
+    }
+
+    #page-content-wrapper {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .table {
+        font-size: 0.75rem;
+    }
+}
