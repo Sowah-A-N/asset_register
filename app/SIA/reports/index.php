@@ -8,7 +8,7 @@ require_once '../init.php';
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Welcome- SIA</title>
+  <title>Welcome- HOD ICT</title>
   <!-- plugins:css -->
   <link rel="stylesheet" href="assets/vendors/mdi/css/materialdesignicons.min.css">
   <link rel="stylesheet" href="assets/vendors/flag-icon-css/css/flag-icon.min.css">
@@ -85,110 +85,236 @@ require_once '../init.php';
           </div>
         </div>
 
-        <div>
-        <!-- Canvas element for the chart -->
-        <canvas id='yearAdditionChart'></canvas>
-    </div>
-
-    <!-- Include Chart.js library -->
-    <script src='../static/chart.min.js'></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <?php
-    // PHP code to fetch data from the database
-    include '../datacon.php';
+    // ── Chart data — sourced from the same tables the reports use ─────────────
 
-    $sqlClassQuery = "SELECT asset_class, opening_bal, opbal_plus_additions FROM asset_classes;";
-    $resultClassQuery = $conn->query($sqlClassQuery);
+    // Selected year (defaults to current year; updated via AJAX below)
+    $chartYear = isset($_POST['chart_year']) ? (int)$_POST['chart_year'] : (int)date('Y');
 
-    if ($resultClassQuery->num_rows > 0) {
-        $assetClassData = array();
-        $openingBalanceData = array();
-        $opBalPlusAdditionsData = array();
+    // Available years for the selector
+    $yearRangeResult = mysqli_query($conn, "SELECT MIN(year) AS min_y, MAX(year) AS max_y FROM asset_class_opbal_year");
+    $yearRange       = $yearRangeResult ? mysqli_fetch_assoc($yearRangeResult) : null;
+    $minChartYear    = ($yearRange && $yearRange['min_y']) ? (int)$yearRange['min_y'] : (int)date('Y');
+    $maxChartYear    = ($yearRange && $yearRange['max_y']) ? (int)$yearRange['max_y'] : (int)date('Y');
 
-        while ($row = $resultClassQuery->fetch_assoc()) {
-            // Storing data in arrays
-            $assetClassData[] = $row['asset_class'];
-            $openingBalanceData[] = $row['opening_bal'];
-            $opBalPlusAdditionsData[] = $row['opbal_plus_additions'];
+    // ── Bar chart: per-class NBV Opening / Additions / NBV End for selected year
+    $barStmt = mysqli_prepare($conn,
+        "SELECT
+            a.asset_class,
+            a.opening_balance,
+            a.total_accum_depr_start,
+            a.net_book_value,
+            COALESCE(b.total_additions_cedi, 0) AS total_additions_cedi,
+            COALESCE(b.total_disposals_cedi, 0) AS total_disposals_cedi
+         FROM asset_class_opbal_year a
+         LEFT JOIN asset_additions_year b
+            ON a.asset_class COLLATE utf8mb4_general_ci = b.asset_class COLLATE utf8mb4_general_ci
+            AND a.year = b.year
+         WHERE a.year = ?
+         ORDER BY a.asset_class");
+
+    $barLabels      = [];
+    $barNbvOpening  = [];
+    $barAdditions   = [];
+    $barNbvEnd      = [];
+
+    if ($barStmt) {
+        mysqli_stmt_bind_param($barStmt, 'i', $chartYear);
+        mysqli_stmt_execute($barStmt);
+        $barResult = mysqli_stmt_get_result($barStmt);
+        while ($row = mysqli_fetch_assoc($barResult)) {
+            $openingCost    = (float)$row['opening_balance'];
+            $accumDeprStart = (float)$row['total_accum_depr_start'];
+            $nbvOpening     = $openingCost - $accumDeprStart;
+            $additions      = (float)$row['total_additions_cedi'];
+            $disposals      = (float)$row['total_disposals_cedi'];
+            $totalCost      = $openingCost + $additions - $disposals;
+            // Recalculate NBV end consistently with the reports
+            $nbvEnd         = max((float)$row['net_book_value'], 0);
+
+            $barLabels[]     = $row['asset_class'];
+            $barNbvOpening[] = round($nbvOpening, 2);
+            $barAdditions[]  = round($additions, 2);
+            $barNbvEnd[]     = round($nbvEnd, 2);
+        }
+        mysqli_stmt_close($barStmt);
+    }
+
+    // ── Line chart: total additions & disposals by year (trend)
+    $trendResult = mysqli_query($conn,
+        "SELECT year,
+                SUM(total_additions_cedi)  AS yearly_additions,
+                SUM(total_disposals_cedi)  AS yearly_disposals
+         FROM asset_additions_year
+         GROUP BY year
+         ORDER BY year ASC");
+
+    $trendYears     = [];
+    $trendAdditions = [];
+    $trendDisposals = [];
+
+    if ($trendResult) {
+        while ($row = mysqli_fetch_assoc($trendResult)) {
+            $trendYears[]     = $row['year'];
+            $trendAdditions[] = round((float)$row['yearly_additions'], 2);
+            $trendDisposals[] = round((float)$row['yearly_disposals'], 2);
         }
     }
     ?>
 
-   <script>
-    // JavaScript block for Chart setup
+    <!-- Year selector for bar chart -->
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <label class="mb-0 font-weight-bold text-dark">Asset Values by Class — Year:</label>
+        <select id="chartYearSelect" class="form-control form-control-sm" style="width:auto">
+            <?php for ($y = $maxChartYear; $y >= $minChartYear; $y--): ?>
+                <option value="<?php echo $y; ?>" <?php echo ($y === $chartYear) ? 'selected' : ''; ?>>
+                    <?php echo $y; ?>
+                </option>
+            <?php endfor; ?>
+        </select>
+    </div>
 
-        // Retrieve data from PHP and assign to JavaScript variables
-        const assetClasses = <?php echo json_encode($assetClassData) ?>;
-        const openingBalances = <?php echo json_encode($openingBalanceData) ?>;
-        const opBalPlusAdditions = <?php echo json_encode($opBalPlusAdditionsData) ?>;
+    <!-- Chart 1: Grouped bar — NBV Opening / Additions / NBV End per class -->
+    <div class="mb-4" style="position:relative; height:300px">
+        <canvas id="nbvByClassChart"></canvas>
+    </div>
 
-        // Chart data setup
-        const setupData = {
-            // Labels for the X-axis (asset classes)
-            labels: assetClasses,
-            // Datasets containing data for each bar in the chart
-            datasets: [{
-                    // Dataset for Opening Balances
-                    label: "Opening Balances",
-                    data: openingBalances,
-                    // Background color for bars representing opening balances
-                    backgroundColor: [
-                        'rgba(90, 223, 68, 0.8)'
-                    ],
-                    // Border color for bars representing opening balances
-                    borderColor: [
-                        'rgba(102, 223, 100, 0.5)'
-                    ],
-                    // Border width for bars representing opening balances
+    <hr class="my-4">
+
+    <!-- Chart 2: Line — additions & disposals trend by year -->
+    <div class="mb-1">
+        <span class="font-weight-bold text-dark">Capital Additions &amp; Disposals — All Years (GH₵)</span>
+    </div>
+    <div style="position:relative; height:260px">
+        <canvas id="trendChart"></canvas>
+    </div>
+
+    <script>
+    // ── Chart 1: NBV by Class (bar) ───────────────────────────────────────────
+    const barLabels     = <?php echo json_encode($barLabels); ?>;
+    const barNbvOpening = <?php echo json_encode($barNbvOpening); ?>;
+    const barAdditions  = <?php echo json_encode($barAdditions); ?>;
+    const barNbvEnd     = <?php echo json_encode($barNbvEnd); ?>;
+
+    const nbvChart = new Chart(document.getElementById('nbvByClassChart'), {
+        type: 'bar',
+        data: {
+            labels: barLabels,
+            datasets: [
+                {
+                    label: 'NBV — Opening (GH₵)',
+                    data: barNbvOpening,
+                    backgroundColor: 'rgba(54, 162, 235, 0.75)',
+                    borderColor:     'rgba(54, 162, 235, 1)',
                     borderWidth: 1
                 },
                 {
-                    // Dataset for Plus Additions
-                    label: "Plus Additions",
-                    data: opBalPlusAdditions,
-                    // Background color for bars representing plus additions
-                    backgroundColor: [
-                        'rgba(199, 67, 222, 0.8)'
-                    ],
-                    // Border color for bars representing plus additions
-                    borderColor: [
-                        'rgba(199, 67, 222, 0.5)'
-                    ],
-                    // Border width for bars representing plus additions
+                    label: 'Additions — Year (GH₵)',
+                    data: barAdditions,
+                    backgroundColor: 'rgba(75, 192, 100, 0.75)',
+                    borderColor:     'rgba(75, 192, 100, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'NBV — Closing (GH₵)',
+                    data: barNbvEnd,
+                    backgroundColor: 'rgba(255, 159, 64, 0.75)',
+                    borderColor:     'rgba(255, 159, 64, 1)',
                     borderWidth: 1
                 }
             ]
-        };
-
-        // Chart configuration
-        const configData = {
-            // Type of chart (bar chart in this case)
-            type: 'bar',
-            // Data to be displayed in the chart
-            data: setupData,
-            // Chart options, including scale configurations
-            options: {
-                scales: {
-                    x: {
-                        // Start the X-axis at zero and allow stacking
-                        beginAtZero: true,
-                        stacked: true,
-                    },
-                    y: {
-                        // Start the Y-axis at zero and do not stack
-                        beginAtZero: true,
-                        stacked: false,
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ' GH₵ ' + ctx.parsed.y.toLocaleString('en-GH', {minimumFractionDigits: 2})
+                    }
+                }
+            },
+            scales: {
+                x: { beginAtZero: true },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: v => 'GH₵ ' + Number(v).toLocaleString()
                     }
                 }
             }
-        };
+        }
+    });
 
-        // Chart rendering using Chart.js library
-        const yearAdditionChart = new Chart(
-            document.getElementById('yearAdditionChart'), configData
-        );
-   </script>
+    // ── Chart 2: Trend line ───────────────────────────────────────────────────
+    const trendYears     = <?php echo json_encode($trendYears); ?>;
+    const trendAdditions = <?php echo json_encode($trendAdditions); ?>;
+    const trendDisposals = <?php echo json_encode($trendDisposals); ?>;
+
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: trendYears,
+            datasets: [
+                {
+                    label: 'Total Additions (GH₵)',
+                    data: trendAdditions,
+                    borderColor:     'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 5
+                },
+                {
+                    label: 'Total Disposals (GH₵)',
+                    data: trendDisposals,
+                    borderColor:     'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 5
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ' GH₵ ' + ctx.parsed.y.toLocaleString('en-GH', {minimumFractionDigits: 2})
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: v => 'GH₵ ' + Number(v).toLocaleString() }
+                }
+            }
+        }
+    });
+
+    // ── Year selector — reload bar chart via POST ─────────────────────────────
+    document.getElementById('chartYearSelect').addEventListener('change', function () {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '';
+        const input = document.createElement('input');
+        input.type  = 'hidden';
+        input.name  = 'chart_year';
+        input.value = this.value;
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    });
+    </script>
 
 
         <div class="row">
