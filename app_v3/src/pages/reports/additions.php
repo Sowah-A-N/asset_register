@@ -1,0 +1,118 @@
+<?php
+require_auth();
+require_once SRC . '/queries/reports.php';
+
+$years     = get_report_years($conn);
+$year      = get_int('year', $years[0] ?? (int)date('Y'));
+$data      = get_additions_by_year($conn, $year);
+$base_url  = defined('APP_URL') ? rtrim(APP_URL, '/') : '';
+
+$total_cedi = array_sum(array_column($data, 'additions'));
+$total_usd  = 0;
+foreach ($data as $r) {
+    $total_usd += ($r['dollar_rate_used'] > 0) ? (float)$r['additions'] / (float)$r['dollar_rate_used'] : 0;
+}
+
+// Pagination
+$per_page    = 50;
+$page        = max(1, get_int('page', 1));
+$total_rows  = count($data);
+$total_pages = (int)ceil($total_rows / $per_page);
+$paged       = array_slice($data, ($page - 1) * $per_page, $per_page);
+
+$page_title = 'Additions Report';
+$content = function() use ($paged, $total_cedi, $total_usd, $total_rows, $years, $year,
+                            $page, $total_pages, $base_url) {
+?>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-0 fw-bold">Additions Report</h4>
+        <small class="text-muted">Year <?= $year ?> &mdash; <?= number_format($total_rows) ?> assets</small>
+    </div>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+        <form method="get" class="d-flex gap-2">
+            <select name="year" class="form-select form-select-sm" onchange="this.form.submit()">
+                <?php foreach ($years as $y): ?>
+                <option value="<?= $y ?>" <?= $y === $year ? 'selected' : '' ?>><?= $y ?></option>
+                <?php endforeach; ?>
+            </select>
+        </form>
+        <a href="<?= $base_url ?>/exports/assets?report=additions&year=<?= $year ?>&format=csv"
+           class="btn btn-outline-success btn-sm"><i class="bi bi-filetype-csv me-1"></i>CSV</a>
+        <a href="<?= $base_url ?>/exports/pdf?report=additions&year=<?= $year ?>"
+           class="btn btn-outline-danger btn-sm"><i class="bi bi-filetype-pdf me-1"></i>PDF</a>
+        <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-printer me-1"></i>Print
+        </button>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-4">
+        <div class="card border-0 bg-light">
+            <div class="card-body py-2">
+                <small class="text-muted">Total Additions (GHS)</small>
+                <div class="fw-bold fs-5"><?= number_format($total_cedi, 2) ?></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 bg-light">
+            <div class="card-body py-2">
+                <small class="text-muted">Total Additions (USD)</small>
+                <div class="fw-bold fs-5"><?= number_format($total_usd, 2) ?></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+<table class="table table-hover table-sm align-middle small">
+    <thead class="table-dark">
+        <tr>
+            <th>#</th>
+            <th>Asset Name</th>
+            <th>ID No.</th>
+            <th>Class</th>
+            <th>Supplier</th>
+            <th>Acq. Date</th>
+            <th class="text-end">Additions (GHS)</th>
+            <th class="text-end">Additions (USD)</th>
+        </tr>
+    </thead>
+    <tbody>
+    <?php if ($paged): ?>
+        <?php $offset = ($page - 1) * 50; ?>
+        <?php foreach ($paged as $i => $r):
+            $usd = $r['dollar_rate_used'] > 0 ? (float)$r['additions'] / (float)$r['dollar_rate_used'] : 0;
+        ?>
+        <tr>
+            <td class="text-muted"><?= $offset + $i + 1 ?></td>
+            <td><?= esc($r['asset_name']) ?></td>
+            <td><code class="small"><?= esc($r['id_number']) ?></code></td>
+            <td><span class="badge bg-secondary"><?= esc($r['asset_class']) ?></span></td>
+            <td><?= esc($r['supplier_name']) ?></td>
+            <td class="text-nowrap"><?= esc($r['acquisition_date']) ?></td>
+            <td class="text-end"><?= number_format((float)$r['additions'], 2) ?></td>
+            <td class="text-end"><?= number_format($usd, 2) ?></td>
+        </tr>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <tr><td colspan="8" class="text-center text-muted py-4">No additions for year <?= $year ?>.</td></tr>
+    <?php endif; ?>
+    </tbody>
+</table>
+</div>
+
+<?php if ($total_pages > 1):
+    $qs = 'year=' . $year . '&'; ?>
+<nav><ul class="pagination pagination-sm flex-wrap">
+    <li class="page-item <?= $page<=1?'disabled':'' ?>"><a class="page-link" href="?<?= $qs ?>page=<?=$page-1?>">&laquo;</a></li>
+    <?php for($p=max(1,$page-3);$p<=min($total_pages,$page+3);$p++): ?>
+    <li class="page-item <?= $p===$page?'active':'' ?>"><a class="page-link" href="?<?= $qs ?>page=<?=$p?>"><?=$p?></a></li>
+    <?php endfor; ?>
+    <li class="page-item <?= $page>=$total_pages?'disabled':'' ?>"><a class="page-link" href="?<?= $qs ?>page=<?=$page+1?>">&raquo;</a></li>
+</ul></nav>
+<?php endif; ?>
+<?php };
+require SRC . '/templates/layouts/base.php';
