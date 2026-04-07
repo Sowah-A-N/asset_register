@@ -55,6 +55,7 @@ function dispatch($conn) {
             case 'user_create':
             case 'user_edit':
             case 'user_delete':
+            case 'asset_user_save':
                 require SRC . '/actions/admin/user_create.action.php'; return;
             case 'asset_class_save':
                 require SRC . '/actions/admin/asset_class_save.action.php'; return;
@@ -63,6 +64,7 @@ function dispatch($conn) {
             case 'location_save':
                 require SRC . '/actions/admin/location_save.action.php'; return;
             case 'dollar_rate_save':
+            case 'asset_type_save':
                 require SRC . '/actions/admin/dollar_rate_save.action.php'; return;
 
             default:
