@@ -1,25 +1,59 @@
+# Asset Register v3 — Apache config
 Options -Indexes
 
-# Block direct access to anything outside public/
+# ── Rewrite engine ──────────────────────────────────────────────────────────
 RewriteEngine On
 
-# Allow existing files and directories through (css, js, img)
+# If the request is for an actual file or directory, serve it directly
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 
-# Route everything else through index.php
-RewriteRule ^ index.php [QSA,L]
+# Route everything else to index.php
+RewriteRule ^ index.php [L,QSA]
 
-# Block access to hidden files (.env, .git, etc.)
-<FilesMatch "^\.">
-    Order allow,deny
+# ── Block sensitive files ───────────────────────────────────────────────────
+# Block .env, .git, .htpasswd etc.
+<FilesMatch "(^\.env|\.git|\.htpasswd|\.sh|\.sql|composer\.(json|lock))">
+    Order Allow,Deny
     Deny from all
 </FilesMatch>
 
-# Security headers
+# Block PHP execution in uploads directory (safety net)
+<IfModule mod_rewrite.c>
+    RewriteRule ^storage/ - [F,L]
+</IfModule>
+
+# ── Security headers ────────────────────────────────────────────────────────
 <IfModule mod_headers.c>
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "SAMEORIGIN"
-    Header set X-XSS-Protection "1; mode=block"
-    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+
+    # HSTS (only enable on HTTPS)
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+    # Content Security Policy — allow Bootstrap/Chart.js CDNs
+    Header always set Content-Security-Policy "\
+        default-src 'self'; \
+        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; \
+        style-src  'self' 'unsafe-inline' https://cdn.jsdelivr.net; \
+        font-src   'self' https://cdn.jsdelivr.net; \
+        img-src    'self' data:; \
+        connect-src 'self'; \
+        frame-ancestors 'none'"
+
+    # Remove server fingerprinting
+    Header unset X-Powered-By
+    Header always unset X-Powered-By
+</IfModule>
+
+# ── PHP settings (if mod_php) ────────────────────────────────────────────────
+<IfModule mod_php.c>
+    php_flag  display_errors      Off
+    php_flag  expose_php          Off
+    php_value session.cookie_httponly 1
+    php_value session.cookie_samesite Strict
+    php_value session.use_strict_mode 1
 </IfModule>
