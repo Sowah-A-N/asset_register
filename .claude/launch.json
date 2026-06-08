@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "rmu-asset-register",
+      "runtimeExecutable": "C:/wamp642/bin/php/php8.1.13/php.exe",
+      "runtimeArgs": ["-S", "localhost:8771", "-t", "C:/wamp642/www"],
+      "port": 8771
+    }
+  ]
+}
